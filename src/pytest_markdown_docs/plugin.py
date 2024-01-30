@@ -22,7 +22,6 @@ class MarkdownInlinePythonItem(pytest.Item):
         name: str,
         parent: typing.Union["MarkdownDocstringCodeModule", "MarkdownTextFile"],
         code: str,
-        usefixtures: typing.List[str],
         start_line: int,
         fake_line_numbers: bool,
     ) -> None:
@@ -34,19 +33,6 @@ class MarkdownInlinePythonItem(pytest.Item):
         self.start_line = start_line
         self.fake_line_numbers = fake_line_numbers
 
-        self.usefixtures = usefixtures
-        self.add_marker(pytest.mark.usefixtures(*usefixtures))
-
-    def setup(self):
-        def func() -> None:
-            pass
-
-        self.funcargs = {}
-        self._fixtureinfo = self.session._fixturemanager.getfixtureinfo(
-            node=self, func=func, cls=None, funcargs=False
-        )
-        self.fixture_request = FixtureRequest(self, _ispytest=True)
-        self.fixture_request._fillfixtures()
 
     def runtest(self):
         global_sets = self.parent.config.hook.pytest_markdown_docs_globals()
@@ -55,10 +41,6 @@ class MarkdownInlinePythonItem(pytest.Item):
         all_globals = mod.__dict__
         for global_set in global_sets:
             all_globals.update(global_set)
-
-        for fixture_name in self.usefixtures:
-            fixture_value = self.fixture_request.getfixturevalue(fixture_name)
-            all_globals[fixture_name] = fixture_value
 
         try:
             tree = ast.parse(self.code)
